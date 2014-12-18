@@ -1,0 +1,246 @@
+---
+title: 'Coursera Reproducible Research Peer Assessment #2'
+author: "Bill Cary"
+date: "Sunday, December 14, 2014"
+output: html_document
+---
+
+# NOAA Storm Database Exploration and Analysis
+## Synopsis
+
+
+## Data Analysis
+#### Set defaults
+Set knitr to echo code by default
+```{r setoptions, echo = TRUE}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Set echo=TRUE by default
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+library(knitr)
+opts_chunk$set(echo = TRUE)
+
+```
+
+#### Import the R libraries required for the analysis
+```{r prep}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Import required libraries
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+suppressMessages(library(ggplot2))     # General plotting functions
+suppressMessages(library(plyr))        # Data manipulation
+suppressMessages(library(dplyr))       # Data manipulation
+suppressMessages(library(lubridate))   # Handling date values
+suppressMessages(library(timeDate))    # Handling date values
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Set paths for files and directory structure
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+path_data <- './data/repdata-data-StormData.csv.bz2'
+
+```
+
+#### Loading the data
+Read the raw dataset into R.  Because the dataset is large and the initial load
+is time consuming, the cache=TRUE option is used to decrease the runtime after
+the initial execution of the analysis.
+```{r loaddata, cache=TRUE}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Read the data into R
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+data <- read.csv(path_data)
+```
+
+#### Explore the data
+```{r exploredata}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Briefly summarize the dataset
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+summary(data)
+str(data)
+
+```
+
+
+## Results
+
+
+## Appendix
+
+#### Miscellaneous Support Information
+Print out system and session information to support future readers in
+replicating the environment used to produce the output, and in troubleshooting
+any potential issues that arise when running the code.
+```{r info}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Print System and Session for reproducibility & troubleshooting.
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+print(sessionInfo())
+# print(Sys.info())   omit Sys.info() for privacy reasons
+```
+
+#### What is mean total number of steps taken per day?
+First, we plot a histogram illustrating the distribution of steps taken per
+day.  To do, this we first summarize the data to determine the total number
+of steps taken each day.  (Because the raw dataset reports the data in five
+minute intervals.)
+```{r histogram}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize data to determine the total number of steps taken each day.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sumdata <- ddply(data, c('date.trans'), summarise,
+               dailysum = sum(steps))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create a histogram plot
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+qplot(sumdata$dailysum, binwidth = 1350)
+```
+
+
+Next, we calculate the mean and median total steps per day, ignoring NA values.
+```{r meanmedian}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Use data summarized above to determine daily mean and median steps
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+meansteps <- mean(sumdata$dailysum, na.rm = TRUE)
+mediansteps <- median(sumdata$dailysum, na.rm = TRUE)
+```
+
+The mean number of steps taken per day is `r meansteps` and the median number
+of steps taken per day is `r mediansteps`.
+
+#### What is the average daily activity pattern?
+Next, we will create a time series plot of the average number of steps across
+all days (y-axis) by five-minute interval (x-axis).  To create this plot, we
+first use plyr to calculate the average number of steps for each interval prior
+to creating the time series plot.
+```{r dailyactivity}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize data to determine the total number of steps taken each day.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dailyavg <- ddply(data, c('interval'), summarise,
+               dailymean = mean(steps, na.rm = TRUE))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create the plot
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(dailyavg, aes(x=interval, y=dailymean)) + 
+        geom_line()
+```
+
+Now that we have averaged the number of steps by interval, it is simple to
+determine the specific interval that has, on average, the highest number of
+steps.
+```{r maxstepsinterval}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Use which.max() to determine the row with the maximum number of steps
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dailyavg[which.max(dailyavg[,2]),]
+```
+
+As can be seen above, the interval with the maximum average number of steps
+is interval number `r dailyavg[which.max(dailyavg[,2]),][,1]`.
+
+####Imputing missing values
+First, we determine the number of missing values in the steps field as follows:
+```{r nummissingvalues}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize the data$steps field to see the number of NA values
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+summary(data$steps)
+```
+As can be seen above, the steps field contains `r sum(is.na(data$steps))` NA
+values.  Next, we will create a new dataset that is a copy of the old dataset,
+but with NA values replaced by the average for the respective intervals.
+```{r replaceNAs}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Group by interval number, and calculate the interval means
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+interval_means <- summarise(grouped <- group_by(data, interval),
+                            intmean = mean(steps, na.rm = TRUE))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Copy the original dataframe, then merge the new interval means dataframe
+# with the copy
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+newdata <- data
+merged <- merge(newdata, interval_means, "interval")
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Add a new column containing the steps value, with NA's replaced by the
+# interval mean
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+merged <- mutate(merged, newsteps = ifelse(is.na(steps), intmean, steps))
+```
+Following these operations, the new column - newsteps - contains no NA values.
+`r summary(merged$newsteps)`
+
+Next, using the new data, we plot a histogram illustrating the distribution of
+steps taken per day.  To do, this we first summarize the data to determine the
+total number of steps taken each day.  (Because the raw dataset reports the
+data in fiveminute intervals.)
+```{r newhistogram}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize data to determine the total number of steps taken each day.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sumdata <- ddply(merged, c('date.trans'), summarise,
+               dailysum = sum(newsteps))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create a histogram plot
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+qplot(sumdata$dailysum, binwidth = 1350)
+```
+
+
+Next, we calculate the mean and median total steps per day.
+```{r newmeanmedian}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Use data summarized above to determine daily mean and median steps
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+meansteps <- mean(sumdata$dailysum, na.rm = TRUE)
+mediansteps <- median(sumdata$dailysum, na.rm = TRUE)
+```
+
+The mean number of steps taken per day is `r meansteps` and the median number
+of steps taken per day is `r mediansteps`.
+
+As can be seen above, these numbers differ very little from the mean and median
+values determined without imputing missing data.  In this case, imputation of
+missing data appears to have made very little difference in the estimates for
+the total dfaily number of steps.
+
+#### Are there differences in activity patterns between weekdays and weekends?
+To answer this question, we must first add a column to our new dataframe to
+indicate weather the falls on a weekday or a weekend.  Then we will make
+seperate time series plots of the average steps, by interval, for both weekdays
+and weekends.
+```{r weekdays}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Add the factor column indicating whether the date falls on a weekend or
+# a weekday.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+merged$weekday <- as.factor(ifelse(isWeekday(merged$date.trans),
+                                   'weekday', 'weekend'))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize data to determine the total number of steps taken each day.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dailyavg <- ddply(merged, c('interval', 'weekday'), summarise,
+                  dailymean = mean(steps, na.rm = TRUE))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create the plot
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(dailyavg, aes(x=interval, y=dailymean)) + 
+        geom_line() +
+        facet_grid(weekday ~ .)
+```
+
+Based on the plot above, it appears that there ARE differences in daily activity
+patterns between weekends and weekdays.  Most obviously, it is apparent that
+activity begins earlier in the day on weekdays, and it continues later into the
+evening on weekends.  This makes intuitive sense, in that one would expect that
+people to be up earlier on weekdays to go to work, and out later at night on
+weekends since they are able to sleep in the following day.
+
