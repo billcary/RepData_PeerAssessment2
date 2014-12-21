@@ -1,11 +1,11 @@
 ---
 title: 'Coursera Reproducible Research Peer Assessment #2'
 author: "Bill Cary"
-date: "Sunday, December 14, 2014"
-output: pdf_document
+date: "Sunday, December 21, 2014"
+output: html_document
 ---
 
-# NOAA Storm Database Exploration and Analysis
+# Title - NOAA Storm Database Exploration and Analysis
 ## Synopsis
 Based on the following analysis, it is clear that in terms of hazards to human
 health, tornados are far and away the leading weather-related cause of both 
@@ -34,6 +34,7 @@ suppressMessages(library(ggplot2))     # General plotting functions
 suppressMessages(library(plyr))        # Data manipulation
 suppressMessages(library(dplyr))       # Data manipulation
 suppressMessages(library(gridExtra))   # Grid layout for ggplot2 graphs
+suppressMessages(library(scales))      # Axis scaling for ggplot2 graphs
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Set paths for files and directory structure
@@ -222,6 +223,10 @@ crop damage.  The primary objective of this part of the exercise is to identify
 the greatest cause of economic damage, it is also useful to understand the
 largest causes of each component of damage - crop and property damage.
 
+*NOTE FOR GRADERS: The plot below is a single figure with multiple panels*
+*constructed using the gridExtra package.*
+
+
 ```{r plots}
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Plot the top 10 event types in descending order of magnitude
@@ -229,34 +234,64 @@ largest causes of each component of damage - crop and property damage.
 plot1 <- ggplot(data=top10health, aes(x=reorder(EVTYPE, -sumhazards),
                                       y=sumhazards)) +
         geom_bar(stat="identity") +
-        theme(axis.text.x=element_text(angle=45, hjust=1))
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        xlab('') +
+        ylab('No of Occurences') +
+        theme(text = element_text(size=8)) +
+        ggtitle('Fatalities + Injuries') +
+        scale_y_continuous(labels = comma)
 
 plot2 <- ggplot(data=top10health, aes(x=reorder(EVTYPE, -sumfatalities),
                                       y=sumfatalities)) +
         geom_bar(stat="identity") +
-        theme(axis.text.x=element_text(angle=45, hjust=1))
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        xlab('') +
+        ylab('No of Occurences') +
+        theme(text = element_text(size=8)) +
+        ggtitle('Fatalities') +
+        scale_y_continuous(labels = comma)
 
 plot3 <- ggplot(data=top10health, aes(x=reorder(EVTYPE, -suminjuries),
                                       y=suminjuries)) +
         geom_bar(stat="identity") +
-        theme(axis.text.x=element_text(angle=45, hjust=1))
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        xlab('') +
+        ylab('No of Occurences') +
+        theme(text = element_text(size=8)) +
+        ggtitle('Injuries') +
+        scale_y_continuous(labels = comma)
 
 plot4 <- ggplot(data=top10econ, aes(x=reorder(EVTYPE, -sumtotaldmg),
                                     y=sumtotaldmg)) +
         geom_bar(stat="identity") +
-        theme(axis.text.x=element_text(angle=45, hjust=1))
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        xlab('') +
+        ylab('$ Damages') +
+        theme(text = element_text(size=8)) +
+        ggtitle('Property + Crop') +
+        scale_y_continuous(labels = comma)
 
 plot5 <- ggplot(data=top10econ, aes(x=reorder(EVTYPE, -sumpropdmg),
                                     y=sumpropdmg)) +
         geom_bar(stat="identity") +
-        theme(axis.text.x=element_text(angle=45, hjust=1))
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        xlab('') +
+        ylab('$ Damages') +
+        theme(text = element_text(size=8)) +
+        ggtitle('Property') +
+        scale_y_continuous(labels = comma)
 
 plot6 <- ggplot(data=top10econ, aes(x=reorder(EVTYPE, -sumcropdmg),
                                     y=sumcropdmg)) +
         geom_bar(stat="identity") +
-        theme(axis.text.x=element_text(angle=45, hjust=1))
+        theme(axis.text.x=element_text(angle=45, hjust=1)) +
+        xlab('') +
+        ylab('$ Damages') +
+        theme(text = element_text(size=8)) +
+        ggtitle('Crop') +
+        scale_y_continuous(labels = comma)
 
-grid.arrange(plot1, plot4, plot2, plot5, plot3, plot6, nrow=3, ncol=2)
+grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, nrow=2, ncol=3)
 
 ```
 
@@ -270,6 +305,7 @@ any potential issues that arise when running the code.
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Print System and Session for reproducibility & troubleshooting.
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+print(Sys.time())
 print(sessionInfo())
 # print(Sys.info())   omit Sys.info() for privacy reasons
 ```
