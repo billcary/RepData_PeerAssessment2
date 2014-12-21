@@ -82,10 +82,42 @@ deaths and injuries (whether direct or indirect) caused by the event.  However,
 I also make special note of the events which lead to the highest number of
 direct and indirect deaths, as one can subjectively consider any injury, no
 matter how severe, to be less severe than death.
+```{r healthhazard}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Add a column that summarizes injuries and fatalities
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+data$TOTALHAZARDS <- data$FATALITIES + data$INJURIES
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize the data by Event Type using dplyr
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sumdata <- group_by(data, EVTYPE) %>%
+        summarise(sumfatalities = sum(FATALITIES, na.rm=TRUE),
+                  suminjuries = sum(INJURIES, na.rm=TRUE),
+                  sumhazards = sum(TOTALHAZARDS, na.rm=TRUE)) %>% 
+        arrange(desc(sumhazards))
 
-#### Data Cleansing
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plot the data as a column chart in descending order based on the number of
+# injuries and fatalities
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sumdata <- group_by(data, EVTYPE) %>%
+        summarise(sumfatalities = sum(FATALITIES, na.rm=TRUE),
+                  suminjuries = sum(INJURIES, na.rm=TRUE),
+                  sumhazards = sum(TOTALHAZARDS, na.rm=TRUE)) %>% 
+        arrange(desc(sumhazards))
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Select the top 10 event types by total hazards
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+top10 <- head(sumdata, 10)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plot the top 10 event types in descending order of magnitude
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(data=top10, aes(x=reorder(EVTYPE, -sumhazards), y=sumhazards)) +
+        geom_bar(stat="identity")
+```
 
 ## Across the United States, which types of events have the greatest economic
 ## consequences?
