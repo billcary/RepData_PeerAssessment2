@@ -74,6 +74,67 @@ addition, the exponents provided in those fields need to be applied to the
 PROPDMG and CROPDMG values to put the values of each event on the same numeric
 basis.
 
+```{r cleandata1}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Clean the 'EXP fields (PROPDMGEXP, CROPDMGEXP) according to the following
+# rules:
+#        1) If field contains a numeric value, then drop the row
+#        2) If field contains a +, - or ? then drop the row
+#        3) If field contains a lower case h, k, b or m, then convert to upper
+#        4) If field is blank, then take no action
+#
+#        Following the above rules will eliminate only a very small fraction of
+#        the available data and should not impact the results of the analysis.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# First, determine the initial length of the dataset (number of rows)
+initial.length <- dim(data)[1]
+
+# Now convert both columns to upper case
+data$PROPDMGEXP <- toupper(data$PROPDMGEXP)
+data$CROPDMGEXP <- toupper(data$CROPDMGEXP)
+
+# Now drop any rows that do not contain an alphabetic or blank value in either
+# of the two columns
+data <- filter(data, PROPDMGEXP %in% c('', 'H', 'K', 'M', 'B'))
+data <- filter(data, CROPDMGEXP %in% c('', 'H', 'K', 'M', 'B'))
+
+# Now, determine the final length of the dataset (number of rows)
+final.length <- dim(data)[1]
+```
+
+By removing the ambiguously labeled rows, we have only removed
+`r (initial.length - final.length) * 100 / initial.length`% of the original
+data.
+
+```{r cleandata2}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Standardize the PROPDMG and CROPDMG values according to the following rules, 
+# based on the values in the PROPDMGEXP and CROPDMGEXP fields:
+#
+#        1) If PROPDMGEXP or CROPDMGEXP are blank, then leave the value as-is
+#        2) If they equal 'H', then multiply by 100
+#        3) If they equal 'K', then multiply by 1,000
+#        4) If they equal 'M', then multiply by 1,000,000
+#        5) If they equal 'B', then multiply by 1,000,000,000
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# First, determine the initial length of the dataset (number of rows)
+initial.length <- dim(data)[1]
+
+# Now convert both columns to upper case
+data$PROPDMGEXP <- toupper(data$PROPDMGEXP)
+data$CROPDMGEXP <- toupper(data$CROPDMGEXP)
+
+# Now drop any rows that do not contain an alphabetic or blank value in either
+# of the two columns
+data <- filter(data, PROPDMGEXP %in% c('', 'H', 'K', 'M', 'B'))
+data <- filter(data, CROPDMGEXP %in% c('', 'H', 'K', 'M', 'B'))
+
+# Now, determine the final length of the dataset (number of rows)
+final.length <- dim(data)[1]
+```
+
 ## Across the United States, which types of events (as indicated in the
 ## EVTYPE variable) are most harmful with respect to population health?
 For the purposes of answering this question, I interpret the degree of harm of
@@ -116,7 +177,16 @@ top10 <- head(sumdata, 10)
 # Plot the top 10 event types in descending order of magnitude
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ggplot(data=top10, aes(x=reorder(EVTYPE, -sumhazards), y=sumhazards)) +
-        geom_bar(stat="identity")
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1))
+
+ggplot(data=top10, aes(x=reorder(EVTYPE, -sumfatalities), y=sumfatalities)) +
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1))
+
+ggplot(data=top10, aes(x=reorder(EVTYPE, -suminjuries), y=suminjuries)) +
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
 ## Across the United States, which types of events have the greatest economic
