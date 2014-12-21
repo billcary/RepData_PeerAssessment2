@@ -120,7 +120,7 @@ data.
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Create a function to handle the standardization
-myfunction <- function(x,y) {
+standardize <- function(x,y) {
         
         if (y == 'H'){
                 x <- x * 100
@@ -142,20 +142,10 @@ return(x)
 
 }
 
-# First, determine the initial length of the dataset (number of rows)
-initial.length <- dim(data)[1]
+# Standardize the damage estimates
+data$PROPDMG <- mapply(standardize,x=data$PROPDMG,y=data$PROPDMGEXP)
+data$CROPDMG <- mapply(standardize,x=data$CROPDMG,y=data$CROPDMGEXP)
 
-# Now convert both columns to upper case
-data$PROPDMGEXP <- toupper(data$PROPDMGEXP)
-data$CROPDMGEXP <- toupper(data$CROPDMGEXP)
-
-# Now drop any rows that do not contain an alphabetic or blank value in either
-# of the two columns
-data <- filter(data, PROPDMGEXP %in% c('', 'H', 'K', 'M', 'B'))
-data <- filter(data, CROPDMGEXP %in% c('', 'H', 'K', 'M', 'B'))
-
-# Now, determine the final length of the dataset (number of rows)
-final.length <- dim(data)[1]
 ```
 
 ## Across the United States, which types of events (as indicated in the
@@ -182,38 +172,64 @@ sumdata <- group_by(data, EVTYPE) %>%
         arrange(desc(sumhazards))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Plot the data as a column chart in descending order based on the number of
-# injuries and fatalities
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-sumdata <- group_by(data, EVTYPE) %>%
-        summarise(sumfatalities = sum(FATALITIES, na.rm=TRUE),
-                  suminjuries = sum(INJURIES, na.rm=TRUE),
-                  sumhazards = sum(TOTALHAZARDS, na.rm=TRUE)) %>% 
-        arrange(desc(sumhazards))
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Select the top 10 event types by total hazards
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-top10 <- head(sumdata, 10)
+top10health <- head(sumdata, 10)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Plot the top 10 event types in descending order of magnitude
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ggplot(data=top10, aes(x=reorder(EVTYPE, -sumhazards), y=sumhazards)) +
+ggplot(data=top10health, aes(x=reorder(EVTYPE, -sumhazards), y=sumhazards)) +
         geom_bar(stat="identity") +
         theme(axis.text.x=element_text(angle=45, hjust=1))
 
-ggplot(data=top10, aes(x=reorder(EVTYPE, -sumfatalities), y=sumfatalities)) +
+ggplot(data=top10health, aes(x=reorder(EVTYPE, -sumfatalities), y=sumfatalities)) +
         geom_bar(stat="identity") +
         theme(axis.text.x=element_text(angle=45, hjust=1))
 
-ggplot(data=top10, aes(x=reorder(EVTYPE, -suminjuries), y=suminjuries)) +
+ggplot(data=top10health, aes(x=reorder(EVTYPE, -suminjuries), y=suminjuries)) +
         geom_bar(stat="identity") +
         theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
 ## Across the United States, which types of events have the greatest economic
 ## consequences?
+
+```{r economicdamage}
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Add a column that summarizes total economic damage caused by the event
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+data$TOTALDAMAGE <- data$PROPDMG + data$CROPDMG
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Summarize the data by Event Type using dplyr
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sumdata <- group_by(data, EVTYPE) %>%
+        summarise(sumpropdmg = sum(PROPDMG, na.rm=TRUE),
+                  sumcropdmg = sum(CROPDMG, na.rm=TRUE),
+                  sumtotaldmg = sum(TOTALDAMAGE, na.rm=TRUE)) %>% 
+        arrange(desc(sumtotaldmg))
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Select the top 10 event types by total hazards
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+top10econ <- head(sumdata, 10)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Plot the top 10 event types in descending order of magnitude
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ggplot(data=top10econ, aes(x=reorder(EVTYPE, -sumtotaldmg), y=sumtotaldmg)) +
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1))
+
+ggplot(data=top10econ, aes(x=reorder(EVTYPE, -sumpropdmg), y=sumpropdmg)) +
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1))
+
+ggplot(data=top10econ, aes(x=reorder(EVTYPE, -sumcropdmg), y=sumcropdmg)) +
+        geom_bar(stat="identity") +
+        theme(axis.text.x=element_text(angle=45, hjust=1))
+```
 
 ## Results
 
