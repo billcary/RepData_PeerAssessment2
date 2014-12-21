@@ -119,6 +119,29 @@ data.
 #        5) If they equal 'B', then multiply by 1,000,000,000
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Create a function to handle the standardization
+myfunction <- function(x,y) {
+        
+        if (y == 'H'){
+                x <- x * 100
+                }
+        else if (y == 'K'){
+                x <- x * 1000
+                }
+        else if (y == 'M'){
+                x <- x * 1000000
+                }
+        else if (y == 'B'){
+                x <- x * 1000000000
+                }
+        else{
+                x <- x
+                }
+
+return(x)
+
+}
+
 # First, determine the initial length of the dataset (number of rows)
 initial.length <- dim(data)[1]
 
