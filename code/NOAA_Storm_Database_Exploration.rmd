@@ -69,10 +69,11 @@ summary(data$CROPDMGEXP)
 From the summaries above, it does not appear that the FATALITIES, INJURIES,
 PROPDMG and CROPDMG fields require cleansing/standardization.  However, the
 PROPDMGEXP and CROPDMGEXP field contain significant duplication of values ("m"
-and "M") that needs to be corrected before the data is useful for analysis.  In
-addition, the exponents provided in those fields need to be applied to the
-PROPDMG and CROPDMG values to put the values of each event on the same numeric
-basis.
+and "M") that needs to be corrected before the data is useful for analysis.
+They also contain a number of values that are not defined, including +, -, ?
+as well as numeric values.  In addition, the exponents provided in those fields
+need to be applied to the PROPDMG and CROPDMG values to put the values of each
+event on the same numeric basis.
 
 ```{r cleandata1}
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -176,6 +177,8 @@ sumdata <- group_by(data, EVTYPE) %>%
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 top10health <- head(sumdata, 10)
 
+top10health
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Plot the top 10 event types in descending order of magnitude
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,9 +214,11 @@ sumdata <- group_by(data, EVTYPE) %>%
         arrange(desc(sumtotaldmg))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Select the top 10 event types by total hazards
+# Select the top 10 event types by total economic damage
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 top10econ <- head(sumdata, 10)
+
+top10econ
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Plot the top 10 event types in descending order of magnitude
